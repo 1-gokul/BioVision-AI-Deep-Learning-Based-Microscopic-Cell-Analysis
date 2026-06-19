@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Data (large files, user-specific)
+data/blood_cells/images/
+data/blood_cells/labels/
+data/*.db
+*.db
+
+# Model weights (too large for git - use git-lfs or just document path)
+*.pt
+!models/.gitkeep
+
+# Training runs
+runs/
+
+# Streamlit
+.streamlit/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Kaggle
+kaggle.json
