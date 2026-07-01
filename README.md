@@ -52,7 +52,7 @@ cell-analysis-platform/
 ### 1. Clone and Setup
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/cell-analysis-platform.git
+git clone https://github.com/1-gokul/BioVision-AI-Deep-Learning-Based-Microscopic-Cell-Analysis.git
 cd cell-analysis-platform
 
 python -m venv venv
