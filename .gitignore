@@ -15,15 +15,14 @@ env/
 .venv/
 
 # Data (large files, user-specific)
-data/blood_cells/images/
-data/blood_cells/labels/
+data/
 data/*.db
 *.db
 
 # Model weights (too large for git - use git-lfs or just document path)
 *.pt
+!models/best.pt
 !models/.gitkeep
-
 # Training runs
 runs/
 
