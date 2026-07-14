@@ -68,13 +68,13 @@ with st.sidebar:
     use_fallback = False
     st.markdown("---")
     st.markdown("### Navigation")
-    page = st.radio("", ["🏠 Demo", "🔬 Analyze Image", "📊 History", "ℹ️ How to Use"])
+    page = st.radio("", ["🏠 Overview", "🔬 Analyze Image", "📊 History", "ℹ️ How to Use"])
 
 
 # ─────────────────────────────────────────────
-# DEMO PAGE
+# OVERVIEW PAGE
 # ─────────────────────────────────────────────
-if page == "🏠 Demo":
+if page == "🏠 Overview":
     st.title("🔬 BioVision AI — Cell Analysis Platform")
     st.markdown("Automated cell detection and classification from microscope images using YOLOv8.")
     st.markdown("---")
@@ -427,7 +427,7 @@ elif page == "ℹ️ How to Use":
     ## Quick Start
 
     ### 1. Upload an Image
-    - Go to **Demo** or **Analyze Image** tab
+    - Go to **Overview** or **Analyze Image** tab
     - Upload any microscope or cell image (JPG, PNG, TIFF)
 
     ### 2. View Results
@@ -443,6 +443,6 @@ elif page == "ℹ️ How to Use":
 
     ## Dataset
     - **Source**: Kaggle - Blood Cell Detection Dataset (BCCD)
-    - **URL**: https://www.kaggle.com/datasets/drakeluo/blood-cell-detection-data-set
+    - **URL**: https://www.kaggle.com/datasets/adhoppin/blood-cell-detection-datatset
     - **Classes**: RBC, WBC, Platelets
     """)
