@@ -1,4 +1,4 @@
-    """
+"""
 tests/test_detector.py - Unit tests for cell detection pipeline
 Run with: pytest tests/ -v
 """
