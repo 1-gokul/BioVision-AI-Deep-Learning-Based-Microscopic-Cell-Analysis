@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Sample Mule 4 / Anypoint Studio flow.
+    This is NOT a Python file and does not go inside the BioVision repo.
+    It's a separate Mule project that acts as an API gateway/orchestrator
+    in front of your FastAPI backend (running on http://localhost:8000
+    in this example — point it at wherever you deploy the FastAPI app).
+
+    What it demonstrates:
+    - HTTP Listener exposing /biovision/analyze and /biovision/history
+    - Forwarding the multipart upload to FastAPI's /analyze
+    - Basic error handling + logging
+    - A place to bolt on things MuleSoft is actually good for:
+      auth (client ID enforcement / OAuth), rate limiting, request
+      transformation (DataWeave), and fan-out to other systems
+      (e.g. push results to a LIMS, EHR, or notification service)
+      whenever a new analysis is created.
+-->
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+
+    <http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+
+    <http:request-config name="BioVision_FastAPI_config" doc:name="HTTP Request config">
+        <http:request-connection host="localhost" port="8000" />
+    </http:request-config>
+
+    <!-- POST /biovision/analyze -> forwards multipart image upload to FastAPI /analyze -->
+    <flow name="biovision-analyze-flow">
+        <http:listener config-ref="HTTP_Listener_config" path="/biovision/analyze" allowedMethods="POST" doc:name="Listener"/>
+        <logger level="INFO" message="Forwarding image to BioVision FastAPI /analyze" doc:name="Log request"/>
+        <http:request method="POST" config-ref="BioVision_FastAPI_config" path="/analyze" doc:name="Call FastAPI">
+            <http:body ><![CDATA[#[payload]]]></http:body>
+        </http:request>
+        <!-- Example DataWeave transform: reshape FastAPI's response before returning it,
+             or fan out an event to another system (Slack, LIMS, email) here -->
+        <ee:transform doc:name="Shape response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler>
+            <on-error-continue type="HTTP:CONNECTIVITY, HTTP:TIMEOUT">
+                <logger level="ERROR" message="BioVision backend unreachable"/>
+                <set-payload value='#[%dw 2.0 output application/json --- { error: "BioVision service unavailable" }]'/>
+                <http:response-builder statusCode="503"/>
+            </on-error-continue>
+        </error-handler>
+    </flow>
+
+    <!-- GET /biovision/history -> forwards to FastAPI /history -->
+    <flow name="biovision-history-flow">
+        <http:listener config-ref="HTTP_Listener_config" path="/biovision/history" allowedMethods="GET" doc:name="Listener"/>
+        <http:request method="GET" config-ref="BioVision_FastAPI_config" path="/history" doc:name="Call FastAPI">
+            <http:query-params><![CDATA[#[attributes.queryParams]]]></http:query-params>
+        </http:request>
+    </flow>
+
+</mule>

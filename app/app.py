@@ -98,10 +98,10 @@ if page == "🏠 Overview":
 
         c1, c2 = st.columns(2)
         with c1:
-            st.image(uploaded, caption="Original", use_container_width=True)
+            st.image(uploaded, caption="Original")
         with c2:
             st.image(cv2.cvtColor(annotated_up, cv2.COLOR_BGR2RGB),
-                     caption="Detected Cells", use_container_width=True)
+                     caption="Detected Cells")
 
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("Total Cells", summary_up["total_cells"])
@@ -121,7 +121,7 @@ if page == "🏠 Overview":
                     color_discrete_sequence=px.colors.qualitative.Set2
                 )
                 fig.update_layout(height=260, margin=dict(t=40, b=0, l=0, r=0))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             with ch2:
                 if detections_up:
                     df = pd.DataFrame([{
@@ -129,13 +129,13 @@ if page == "🏠 Overview":
                         "Confidence": f"{d.confidence:.2%}",
                         "Status": "Abnormal" if d.is_abnormal else "Healthy",
                     } for d in detections_up])
-                    st.dataframe(df, use_container_width=True, height=260)
+                    st.dataframe(df, height=260)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
         btn1, btn2 = st.columns(2)
         with btn1:
-            if st.button("💾 Save to History", type="primary", use_container_width=True):
+            if st.button("💾 Save to History", type="primary"):
                 sid = save_session({
                     "session_name": uploaded.name,
                     "image_filename": uploaded.name,
@@ -167,8 +167,7 @@ if page == "🏠 Overview":
                 label="📄 Download PDF Report",
                 data=pdf_bytes,
                 file_name=f"cell_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-                mime="application/pdf",
-                use_container_width=True
+                mime="application/pdf"
             )
 
     st.markdown("---")
@@ -213,10 +212,10 @@ if page == "🏠 Overview":
         s1, s2 = st.columns(2)
         with s1:
             st.image(os.path.join(SAMPLES_DIR, selected),
-                     caption="Original", use_container_width=True)
+                     caption="Original")
         with s2:
             st.image(cv2.cvtColor(ann, cv2.COLOR_BGR2RGB),
-                     caption="Detected", use_container_width=True)
+                     caption="Detected")
 
         sm1, sm2, sm3, sm4 = st.columns(4)
         sm1.metric("Total Cells", summ["total_cells"])
@@ -234,7 +233,7 @@ if page == "🏠 Overview":
                     color_discrete_sequence=px.colors.qualitative.Set2
                 )
                 fig.update_layout(height=260, margin=dict(t=40, b=0, l=0, r=0))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
             with sc2:
                 if dets:
                     df_s = pd.DataFrame([{
@@ -242,7 +241,7 @@ if page == "🏠 Overview":
                         "Confidence": f"{d.confidence:.2%}",
                         "Status": "Abnormal" if d.is_abnormal else "Healthy",
                     } for d in dets])
-                    st.dataframe(df_s, use_container_width=True, height=260)
+                    st.dataframe(df_s, height=260)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -250,8 +249,7 @@ if page == "🏠 Overview":
             label="📄 Download Sample Report",
             data=sample_pdf,
             file_name=f"sample_report_{selected}.pdf",
-            mime="application/pdf",
-            use_container_width=True
+            mime="application/pdf"
         )
 
 
@@ -274,7 +272,7 @@ elif page == "🔬 Analyze Image":
         notes = st.text_area("Analyst Notes (optional)", height=80)
 
         if uploaded_file:
-            st.image(uploaded_file, caption="Original Image", use_container_width=True)
+            st.image(uploaded_file, caption="Original Image")
 
     with col2:
         if uploaded_file:
@@ -291,7 +289,7 @@ elif page == "🔬 Analyze Image":
                 )
 
             annotated_rgb = cv2.cvtColor(annotated_img, cv2.COLOR_BGR2RGB)
-            st.image(annotated_rgb, caption="Detected Cells (Green=Healthy, Red=Abnormal)", use_container_width=True)
+            st.image(annotated_rgb, caption="Detected Cells (Green=Healthy, Red=Abnormal)")
 
     if uploaded_file and 'summary' in locals():
         st.markdown("---")
@@ -328,7 +326,7 @@ elif page == "🔬 Analyze Image":
                     color_discrete_sequence=px.colors.qualitative.Set2
                 )
                 fig.update_layout(height=300, margin=dict(t=40, b=0, l=0, r=0))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
         with table_col:
             if detections:
@@ -338,13 +336,13 @@ elif page == "🔬 Analyze Image":
                     "Status": "Abnormal" if d.is_abnormal else "Healthy",
                     "Area (px²)": f"{d.area:.0f}"
                 } for d in detections])
-                st.dataframe(df, use_container_width=True, height=280)
+                st.dataframe(df, height=280)
 
         st.markdown("---")
         action_col1, action_col2 = st.columns([1, 1])
 
         with action_col1:
-            if st.button("💾 Save to History", type="primary", use_container_width=True):
+            if st.button("💾 Save to History", type="primary"):
                 session_data = {
                     "session_name": session_name or f"Session {datetime.now().strftime('%Y%m%d_%H%M%S')}",
                     "image_filename": uploaded_file.name,
@@ -378,8 +376,7 @@ elif page == "🔬 Analyze Image":
                 label="📄 Download PDF Report",
                 data=pdf_bytes,
                 file_name=f"cell_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-                mime="application/pdf",
-                use_container_width=True
+                mime="application/pdf"
             )
 
 
@@ -405,7 +402,7 @@ elif page == "📊 History":
             "Model": s.model_used
         } for s in sessions])
 
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df)
 
         if len(sessions) > 1:
             st.markdown("### Trends Over Time")
@@ -415,7 +412,7 @@ elif page == "📊 History":
             fig.add_trace(go.Scatter(x=dates, y=[s.healthy_cells for s in sessions], name="Healthy", mode="lines+markers"))
             fig.add_trace(go.Scatter(x=dates, y=[s.abnormal_cells for s in sessions], name="Abnormal", mode="lines+markers"))
             fig.update_layout(height=350, margin=dict(t=10, b=10))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
 
 # ─────────────────────────────────────────────
