@@ -146,9 +146,6 @@ pytest tests/ -v
 | YOLOv8 | `models/best.pt` exists | Neural network, high accuracy |
 | OpenCV Fallback | No trained model | Contour detection, works immediately |
 
-## Resume Line
-
-> Developed an AI-powered biological image analysis platform using YOLOv8 and OpenCV for automated cell detection and classification in microscope images, featuring a Streamlit UI, a FastAPI REST API for programmatic access, PDF report generation, and SQLite-based analysis history tracking.
 
 ## License
 
