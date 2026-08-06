@@ -42,7 +42,9 @@ BioVision-AI-Deep-Learning-Based-Microscopic-Cell-Analysis/
 │   └── report_generator.py    # generate_report()
 ├── tests/
 │   └── test_detector.py       # Unit tests
-├── data/                      # Dataset + generated reports (auto-created)
+├── data/                      # SQLite DB + generated reports (auto-created)
+├── Dockerfile
+├── docker-compose.yml
 ├── requirements.txt
 └── README.md
 ```
@@ -77,7 +79,7 @@ uvicorn api.main:app --reload --port 8000
 
 Open http://localhost:8000/docs for the interactive Swagger UI.
 
-Both can run simultaneously in separate terminals—they are two independent entry points into the same detection, database, and report-generation logic in `utils/`.
+Both can run simultaneously in separate terminals—they are two independent entry points into the same detection, database, and report-generation logic in `utils/`, and share the same SQLite DB at `data/cell_analysis.db`.
 
 ## REST API Endpoints
 
@@ -88,6 +90,62 @@ Both can run simultaneously in separate terminals—they are two independent ent
 | GET | `/history` | List past analysis sessions |
 | GET | `/history/{id}` | Fetch one past session |
 | GET | `/report/{id}` | Download the PDF report for a session |
+
+**Known limitation:** `/report/{id}` regenerates the PDF from saved detection metadata only — the annotated image itself is not persisted in the database, so the report's image section is currently blank for sessions fetched via `/report`. Fix if you need it: save the annotated JPEG to `data/` in `/analyze` and load it back in `/report`.
+
+## Run with Docker
+
+You don't need a local Python environment for this — Docker handles it. One image, two entry points (Streamlit UI and the FastAPI REST layer).
+
+### 1. Build and run both services with Docker Compose (recommended)
+
+```bash
+docker compose up --build
+```
+
+- Streamlit UI: http://localhost:8501
+- REST API + Swagger docs: http://localhost:8000/docs
+
+Both services mount the same host folders so data and models are shared and persist across rebuilds:
+
+| Host folder | Container path | Purpose |
+| ----------- | --------------- | ------- |
+| `./data`    | `/app/data`     | SQLite DB (`cell_analysis.db`) + generated PDF reports |
+| `./models`  | `/app/models`   | Drop a trained `best.pt` here to use it instead of the base YOLOv8n model |
+
+Stop it with `docker compose down`. Your data and models stay on disk either way.
+
+To run only one service: `docker compose up streamlit` or `docker compose up api`.
+
+### 2. Or build and run with plain Docker
+
+Streamlit (default):
+
+```bash
+docker build -t biovision-ai .
+
+docker run -p 8501:8501 \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/models:/app/models \
+  biovision-ai
+```
+
+FastAPI (override the default command):
+
+```bash
+docker run -p 8000:8000 \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/models:/app/models \
+  biovision-ai uvicorn api.main:app --host 0.0.0.0 --port 8000
+```
+
+### Notes on the image
+
+- Base image: `python:3.10-slim`, matching `runtime.txt`.
+- Installs `libgl1` and `libglib2.0-0` — required by `opencv-python`, otherwise `cv2` fails to import inside the container.
+- No GPU support out of the box. This runs PyTorch/YOLOv8 on CPU. If you need GPU inference, you'd need to switch the base image to an `nvidia/cuda` image with matching PyTorch CUDA wheels and run with `--gpus all` — not set up here.
+- If you skip the volume mounts, the SQLite DB and any trained model resets every time you remove the container.
+- Running both services against the same SQLite file works for light use but isn't safe under real concurrent write load — SQLite will throw `database is locked` errors if both services hammer it at once. Swap to Postgres if that becomes a problem.
 
 ## Dataset
 
