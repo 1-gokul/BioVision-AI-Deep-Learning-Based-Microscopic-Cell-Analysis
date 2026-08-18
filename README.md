@@ -1,6 +1,6 @@
 # 🔬 BioVision AI — Cell Image Analysis Platform
 
-An AI-powered platform for automated cell detection, counting, and classification in microscope images using YOLOv8 and OpenCV — with a Streamlit UI for interactive use and a REST API for programmatic access.
+An AI-powered platform for automated cell detection, counting, and classification in microscope images using Ultralytics-based object detection and OpenCV — with a Streamlit UI for interactive use and a REST API for programmatic access.
 
 ## What It Does
 
@@ -15,14 +15,14 @@ An AI-powered platform for automated cell detection, counting, and classificatio
 
 | Component        | Library              |
 | ---------------- | -------------------- |
-| Detection        | YOLOv8 (Ultralytics) |
+| Detection        | Ultralytics           |
 | Image Processing | OpenCV               |
-| Deep Learning    | PyTorch              |
-| UI               | Streamlit            |
-| REST API         | FastAPI + Uvicorn    |
-| Database         | SQLite + SQLAlchemy  |
-| Reports          | fpdf2                |
-| Charts           | Plotly               |
+| Deep Learning    | PyTorch               |
+| UI               | Streamlit             |
+| REST API         | FastAPI + Uvicorn     |
+| Database         | SQLite + SQLAlchemy   |
+| Reports          | fpdf2                 |
+| Charts           | Plotly                |
 
 ## Project Structure
 
@@ -33,7 +33,7 @@ BioVision-AI-Deep-Learning-Based-Microscopic-Cell-Analysis/
 ├── api/
 │   └── main.py                # FastAPI REST layer (analyze, history, report, health)
 ├── models/
-│   ├── train.py               # YOLOv8 fine-tuning script
+│   ├── train.py               # Fine-tuning script
 │   ├── download_dataset.py    # Kaggle dataset downloader
 │   └── best.pt                # (add here after training)
 ├── utils/
@@ -79,7 +79,7 @@ uvicorn api.main:app --reload --port 8000
 
 Open http://localhost:8000/docs for the interactive Swagger UI.
 
-Both can run simultaneously in separate terminals—they are two independent entry points into the same detection, database, and report-generation logic in `utils/`, and share the same SQLite DB at `data/cell_analysis.db`.
+Both can run simultaneously in separate terminals — they are two independent entry points into the same detection, database, and report-generation logic in `utils/`, and share the same SQLite DB at `data/cell_analysis.db`.
 
 ## REST API Endpoints
 
@@ -111,7 +111,7 @@ Both services mount the same host folders so data and models are shared and pers
 | Host folder | Container path | Purpose |
 | ----------- | --------------- | ------- |
 | `./data`    | `/app/data`     | SQLite DB (`cell_analysis.db`) + generated PDF reports |
-| `./models`  | `/app/models`   | Drop a trained `best.pt` here to use it instead of the base YOLOv8n model |
+| `./models`  | `/app/models`   | Drop a trained `best.pt` here to use it instead of the base detection model |
 
 Stop it with `docker compose down`. Your data and models stay on disk either way.
 
@@ -143,7 +143,7 @@ docker run -p 8000:8000 \
 
 - Base image: `python:3.10-slim`, matching `runtime.txt`.
 - Installs `libgl1` and `libglib2.0-0` — required by `opencv-python`, otherwise `cv2` fails to import inside the container.
-- No GPU support out of the box. This runs PyTorch/YOLOv8 on CPU. If you need GPU inference, you'd need to switch the base image to an `nvidia/cuda` image with matching PyTorch CUDA wheels and run with `--gpus all` — not set up here.
+- No GPU support out of the box. This runs PyTorch/detection on CPU. If you need GPU inference, you'd need to switch the base image to an `nvidia/cuda` image with matching PyTorch CUDA wheels and run with `--gpus all` — not set up here.
 - If you skip the volume mounts, the SQLite DB and any trained model resets every time you remove the container.
 - Running both services against the same SQLite file works for light use but isn't safe under real concurrent write load — SQLite will throw `database is locked` errors if both services hammer it at once. Swap to Postgres if that becomes a problem.
 
@@ -153,7 +153,7 @@ docker run -p 8000:8000 \
 
 - **URL:** https://www.kaggle.com/datasets/drakeluo/blood-cell-detection-data-set
 - **Classes:** RBC (Red Blood Cell), WBC (White Blood Cell), Platelets
-- **Images:** ~364 annotated images already in YOLO format
+- **Images:** ~364 annotated images already in YOLO-format annotations
 - **Size:** ~250 MB
 
 Alternative dataset:
@@ -191,19 +191,18 @@ cp runs/detect/cell_detector/weights/best.pt models/best.pt
 
 Both `app/app.py` and `api/main.py` automatically load `models/best.pt` if present and fall back to OpenCV contour detection otherwise.
 
+## Detection Modes
+
+| Mode | When Used | How |
+| ---- | --------- | --- |
+| Trained model | `models/best.pt` exists | Neural network, high accuracy |
+| OpenCV Fallback | No trained model | Contour detection, works immediately |
+
 ## Run Tests
 
 ```bash
 pytest tests/ -v
 ```
-
-## Detection Modes
-
-| Mode | When Used | How |
-| ---- | --------- | --- |
-| YOLOv8 | `models/best.pt` exists | Neural network, high accuracy |
-| OpenCV Fallback | No trained model | Contour detection, works immediately |
-
 
 ## License
 
