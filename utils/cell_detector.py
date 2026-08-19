@@ -19,8 +19,18 @@ CLASS_NAMES = {
     2: "Platelets", # Platelets - healthy
 }
 
-# Which classes are considered "abnormal" — extend this as you add more classes
-ABNORMAL_CLASSES = set()  # In base dataset all are normal; extend for pathology datasets
+# NOTE on abnormality: the BCCD training set (RBC/WBC/Platelets) has no
+# pathology labels, so there is no ground truth to train a learned
+# healthy-vs-abnormal classifier against. Instead, abnormality is flagged
+# with a morphological outlier heuristic (see flag_abnormal_cells below):
+# a cell is flagged abnormal if its size deviates sharply from the median
+# size of same-class cells in the same image. This is a real, explainable
+# signal (real cells of the same type are fairly size-consistent within one
+# smear), but it is NOT a clinically validated diagnosis - it's a coarse
+# outlier flag, not a trained pathology model.
+SIZE_OUTLIER_HIGH = 1.75  # flag if area > 1.75x the class median in this image
+SIZE_OUTLIER_LOW = 0.5    # flag if area < 0.5x the class median in this image
+MIN_SAMPLES_FOR_OUTLIER_CHECK = 3  # need at least this many same-class cells to compute a meaningful median
 
 HEALTHY_COLOR = (0, 255, 0)    # Green
 ABNORMAL_COLOR = (0, 0, 255)   # Red
@@ -70,16 +80,45 @@ def detect_with_yolo(image: np.ndarray, model, conf_threshold: float = 0.3) -> L
             conf = float(box.conf[0])
             x1, y1, x2, y2 = box.xyxy[0].tolist()
             class_name = CLASS_NAMES.get(cls_id, f"Class_{cls_id}")
-            is_abnormal = cls_id in ABNORMAL_CLASSES
             area = (x2 - x1) * (y2 - y1)
 
             detections.append(CellResult(
                 class_name=class_name,
                 confidence=conf,
                 bbox=(x1, y1, x2, y2),
-                is_abnormal=is_abnormal,
+                is_abnormal=False,  # set by flag_abnormal_cells() after all detections are collected
                 area=area
             ))
+
+    return flag_abnormal_cells(detections)
+
+
+def flag_abnormal_cells(detections: List["CellResult"]) -> List["CellResult"]:
+    """
+    Flag cells whose size is a strong outlier relative to same-class cells
+    in the same image. Real cells of one type are fairly consistent in size
+    within a single smear, so a large deviation is a reasonable (if coarse)
+    signal something is off - oversized platelets and undersized/fragmented
+    RBCs are real morphological abnormalities clinicians look for, so this
+    heuristic isn't arbitrary, but it is NOT a trained/validated classifier.
+
+    Needs at least MIN_SAMPLES_FOR_OUTLIER_CHECK cells of a class to compute
+    a stable median; classes below that threshold are left unflagged since
+    a "median" of 1-2 samples isn't a meaningful baseline.
+    """
+    by_class: dict = {}
+    for d in detections:
+        by_class.setdefault(d.class_name, []).append(d)
+
+    for class_name, group in by_class.items():
+        if len(group) < MIN_SAMPLES_FOR_OUTLIER_CHECK:
+            continue
+        median_area = float(np.median([d.area for d in group]))
+        if median_area <= 0:
+            continue
+        for d in group:
+            ratio = d.area / median_area
+            d.is_abnormal = ratio > SIZE_OUTLIER_HIGH or ratio < SIZE_OUTLIER_LOW
 
     return detections
 
@@ -142,11 +181,11 @@ def detect_with_opencv_fallback(image: np.ndarray) -> List[CellResult]:
             class_name=class_name,
             confidence=round(circularity, 2),  # Use circularity as proxy confidence
             bbox=(float(x), float(y), float(x + bw), float(y + bh)),
-            is_abnormal=False,
+            is_abnormal=False,  # set by flag_abnormal_cells() after all detections are collected
             area=float(area)
         ))
 
-    return detections
+    return flag_abnormal_cells(detections)
 
 
 def draw_detections(image: np.ndarray, detections: List[CellResult]) -> np.ndarray:
